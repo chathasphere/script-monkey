@@ -40,3 +40,19 @@ def prepare_batches(sequences, batch_size, n_states, sequence_length):
 
     return packed_batches
 
+
+
+#lines = []
+#
+#for packed_batch in packed_batches:
+#    
+#    unpacked_sequences, sequence_lengths = pad_packed_sequence(packed_batch)
+#    
+#    for i in range(len(sequence_lengths)):
+#        
+#        length = sequence_lengths[i]
+#        sequence = unpacked_sequences[:,i,:][:length]
+#        
+#        numbers_sequence = [helpers.decode_one_hot(vec) for vec in sequence]
+#        
+#        lines.append([int2char[num] for num in numbers_sequence])

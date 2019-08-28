@@ -17,14 +17,26 @@ def decode_one_hot(vector):
 
 def prepare_batches(sequences, batch_size, n_states, sequence_length):
     """
-    Converts a list of numeric sequences to one-hot encoded batches of the following shape:
-    (sequence_length x batch_size x n_states),
-    where sequence_length is the length of the longest sequence (this function pads/packs shorter sequences)
-    and n_states is the dimensionality of the one-hot encoding.
+    Given a list of numeric sequences, returns batches of input and target sequences.
 
-    Returns a list of Pytorch tensors.
+    Target sequences are input sequences offset by one timestep. The sequence "hello world" would give 
+    an input "hello worl" and a target "ello world".
+    
+    The target and input sequences get converted to one-hot encoded batches of the following shape:
+        (sequence_length x batch_size x n_states)
+    
+      - n_states is the dimensionality of the one-hot encoding.
+
+      - sequence_length is the length of the longest sequence. Shorter sequences are padded to that
+    length. To avoid backpropagating over padded elements, the entire batch is "packed." Whatever that
+    entails.
+
+    Returns two Pytorch PackedSequence objects,  
+    #do I need to pack the target sequence? probably not. 
     """
     sequences = sorted(sequences, key = lambda x: len(x), reverse=True)
+
+    input_sequences 
     batches = []
     n_sequences = len(sequences)
     for i in range(0, n_sequences, batch_size):
@@ -35,24 +47,28 @@ def prepare_batches(sequences, batch_size, n_states, sequence_length):
         sequence_lengths = [len(s) for s in batch]
         coded_batch = [one_hot(s, n_states) for s in batch]
         padded_batch = pad_sequence(coded_batch)
+        #dims should be: (seq_len, batch_size, n_chars)
         packed_batches.append(pack_padded_sequence(padded_batch, 
             sequence_lengths))
 
     return packed_batches
 
+def validate_packing(packed_batches, int2char):
 
+    lines = []
 
-#lines = []
-#
-#for packed_batch in packed_batches:
-#    
-#    unpacked_sequences, sequence_lengths = pad_packed_sequence(packed_batch)
-#    
-#    for i in range(len(sequence_lengths)):
-#        
-#        length = sequence_lengths[i]
-#        sequence = unpacked_sequences[:,i,:][:length]
-#        
-#        numbers_sequence = [helpers.decode_one_hot(vec) for vec in sequence]
-#        
-#        lines.append([int2char[num] for num in numbers_sequence])
+    for packed_batch in packed_batches:
+
+        unpacked_sequences, sequence_lengths = pad_packed_sequence(packed_batch)
+
+        for i in range(len(sequence_lengths)):
+
+            length = sequence_lengths[i]
+            sequence = unpacked_sequences[:,i,:][:length]
+
+            numbers_sequence = [decode_one_hot(vec) for vec in sequence]
+
+            lines.append([int2char[num] for num in numbers_sequence])
+
+    for i in range(15):
+        print(''.join(lines[i]) + '\n')

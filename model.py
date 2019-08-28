@@ -25,7 +25,7 @@ def patched_forward_impl(self, input, hx, batch_sizes,
         result = _VF.lstm(input, hx, self._get_flat_weights(), self.bias, self.num_layers,
                           self.dropout, self.training, self.bidirectional, self.batch_first)
     else:
-        result = _VF.lstm(input, batch_sizes, hx, self._get_flat_weights(), bool(self.bias),
+        result = _VF.lstm(input, batch_sizes, hx, tuple(self._get_flat_weights()), bool(self.bias),
                           self.num_layers, self.dropout, self.training, self.bidirectional)
     output = result[0]
     hidden = result[1:]
@@ -33,7 +33,7 @@ def patched_forward_impl(self, input, hx, batch_sizes,
     return output, hidden
 
 
-class TextGenRNN(nn.Module):
+class CharRNN(nn.Module):
     
     def __init__(self, n_chars, hidden_size, n_rnn_layers=1, dropout=0):
         
@@ -41,6 +41,7 @@ class TextGenRNN(nn.Module):
         
         self.n_layers = n_rnn_layers
         self.n_hidden = hidden_size
+        self.n_chars = n_chars
         #input size corresponds to the number of unique characters
         #sigh, this is bad practice
         nn.LSTM.forward_impl = patched_forward_impl
@@ -52,19 +53,15 @@ class TextGenRNN(nn.Module):
         
     def forward(self, seq, hx):
         
-        #ignore hidden 
         recurrent_output, _ = self.lstm(seq, hx)
         
-        X, _ = pad_packed_sequence(recurrent_output)
+        X, sequence_lengths = pad_packed_sequence(recurrent_output)
 
-        
+        #X = X.view(-1, X.shape[2])
+
         linear_output  = self.dense(X)
 
-        #or log softmax??
         pdb.set_trace()
-        scores = F.softmax(linear_output)
-
-        return scores
 
         
     
@@ -74,5 +71,5 @@ class TextGenRNN(nn.Module):
         hidden = (weight0.new(self.n_layers, batch_size, self.n_hidden).zero_(),
                   weight0.new(self.n_layers, batch_size, self.n_hidden).zero_())
 
-
+        return hidden
 

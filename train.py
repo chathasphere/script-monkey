@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-from helpers import one_hot, decode_one_hot
+from helpers import one_hot, decode_one_hot, prepare_batches
 from random import seed, shuffle
 import torch
 import torch.nn as nn
@@ -89,35 +89,41 @@ def main():
         n_sequences = len(training)
         hx = rnn.init_hidden(batch_size)
         
-        #loop through minibatches
-        for i in range(0, n_sequences, batch_size): 
-
-            batch = training[i:i+batch_size]
-            batch = sorted(batch, key = lambda x: len(x), reverse=True)
+        training_batches = prepare_batches(training, batch_size, n_chars)
+        for input_sequences, target_sequences in training_batches:
+        #loop through minibatches for training
+#        for i in range(0, n_sequences, batch_size): 
+#
+#            batch = training[i:i+batch_size]
+#            batch = sorted(batch, key = lambda x: len(x), reverse=True)
+#            
+#            input_sequences, target_sequences = [], []
+#            #get input and target sequences, one-hot encode them.
+#            for sequence in batch:
+#                encoded = one_hot(sequence, n_chars)
+#                input_sequences.append(encoded[:-1])
+#                target_sequences.append(encoded[1:])
             
-            input_sequences, target_sequences = [], []
-            sequence_lengths = []
-            #get input and target sequences, one-hot encode them.
-            #get sequence lengths too
-            for sequence in batch:
-                encoded = one_hot(sequence, n_chars)
-                input_sequences.append(encoded[:-1])
-                target_sequences.append(encoded[1:])
-                sequence_lengths.append(len(encoded) - 1) #careful with the offsetting ;)
+            sequence_lengths = [len(sequence) for sequence in input_sequences]
+            y_hat, hx = rnn(input_sequences, hx, sequence_lengths)
             
-            #move this to the forward function of CharRnn?
-            padded_input = pad_sequence(input_sequences)
-            packed_input = pack_padded_sequence(padded_input, sequence_lengths)
-
-            output, hx = rnn(packed_input, hx)
-
+            #sheer lunacy
+            #padded_target_sequences = pad_sequence(target_sequences)
+            #packed_target_sequences = pack_padded_sequence(padded_target_sequences, sequence_lengths)
+            #y = packed_target_sequences[0].long()
+            y = torch.cat([torch.tensor(s) for s in target_sequences])
+            loss = loss_function(y_hat, y)
+            
             #what is loss? 
-            #loss = loss_function(output, target_sequences with some reshaping?
+            #loss = loss_function(output, target_sequences) with some reshaping?
             #loss.backward()
-
-            rnn.zero_grad()
+            #consider clipping grad norm
+            #optimizer.step()
+            #rnn.zero_grad()
 
             if (e + 1) % evaluate_per == 0:
+                hx = rnn.init_hidden(batch_size)
+
                 rnn.eval()
                 pass
                 #TODO
@@ -125,11 +131,8 @@ def main():
                 #generalize it into a function?
                 rnn.train()
                 print(f"epoch: {e+1}/{epochs}") # think of more useful print statements
-
     
     #validate_packing(packed_batches, int2char)
-
-    test_out =  shakespeare_net(packed_batch, hx)
 
 
 

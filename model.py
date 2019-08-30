@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from torch.nn import _VF
-from torch.nn.utils.rnn import pad_packed_sequence
+from torch.nn.utils.rnn import pad_packed_sequence, pad_sequence, pack_padded_sequence
 import torch.nn.functional as F
 import pdb
 
@@ -51,18 +51,20 @@ class CharRNN(nn.Module):
         self.dense = nn.Linear(hidden_size, n_chars)
         
         
-    def forward(self, seq, hx):
+    def forward(self, sequences, hx, sequence_lengths):
+
+        padded_sequences = pad_sequence(sequences)
+        packed_sequences = pack_padded_sequence(padded_sequences, sequence_lengths)
         
-        recurrent_output, _ = self.lstm(seq, hx)
+        recurrent_output, hidden = self.lstm(packed_sequences, hx)
         
-        X, sequence_lengths = pad_packed_sequence(recurrent_output)
+        #X, sequence_lengths = pad_packed_sequence(recurrent_output)
 
         #X = X.view(-1, X.shape[2])
 
-        linear_output  = self.dense(X)
+        linear_output  = self.dense(recurrent_output[0])
 
-        pdb.set_trace()
-
+        return linear_output, hidden
         
     
     def init_hidden(self, batch_size):

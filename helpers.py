@@ -25,30 +25,18 @@ def prepare_batches(sequences, batch_size, n_states):
         for sequence in batch:
             encoded = one_hot(sequence, n_states)
             input_sequences.append(encoded[:-1])
+            #do i need to one-hot encode the target sequences?
             target_sequences.append(sequence[1:])
 
         yield input_sequences, target_sequences
 
-#def prepare_batches(sequences, batch_size, n_states, sequence_length):
-#    """
-#    Given a list of numeric sequences, returns batches of input and target sequences.
-#
-#    Target sequences are input sequences offset by one timestep. The sequence "hello world" would give 
-#    an input "hello worl" and a target "ello world".
-#    
-#    The target and input sequences get converted to one-hot encoded batches of the following shape:
-#        (sequence_length x batch_size x n_states)
-#    
-#      - n_states is the dimensionality of the one-hot encoding.
-#
-#      - sequence_length is the length of the longest sequence. Shorter sequences are padded to that
-#    length. To avoid backpropagating over padded elements, the entire batch is "packed." Whatever that
-#    entails.
-#
-#    Returns two Pytorch PackedSequence objects,  
-#    #do I need to pack the target sequence? probably not. 
-#    """
+def get_target_tensor(target_sequences, sequence_lengths):
+
+    target_tensors = [torch.tensor(s) for s in target_sequences]
+    padded_targets = pad_sequence(target_tensors)
     
+    return pack_padded_sequence(padded_targets, sequence_lengths)
+
 def validate_packing(packed_batches, int2char):
 
     lines = []

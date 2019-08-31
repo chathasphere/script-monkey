@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-from helpers import one_hot, decode_one_hot, prepare_batches
+from helpers import one_hot, prepare_batches, get_target_tensor
 from random import seed, shuffle
 import torch
 import torch.nn as nn
@@ -29,11 +29,13 @@ def extract_shakespeare_data():
 
 
 def encode_chars(text_lines, max_length):
+    #potentially want a way to hold onto int2char,char2int...
+    #TODO convert this into a class
+
     #data is a list of strings 
     #mythical double list (in)comprehension
     flatten = lambda l: [item for sublist in l for item in sublist]
     flattened = flatten(text_lines)
-
     chars = tuple(set(flattened))
     int2char = dict(enumerate(chars))
     char2int = {value: key for key, value in int2char.items()}
@@ -91,46 +93,40 @@ def main():
         
         training_batches = prepare_batches(training, batch_size, n_chars)
         for input_sequences, target_sequences in training_batches:
-        #loop through minibatches for training
-#        for i in range(0, n_sequences, batch_size): 
-#
-#            batch = training[i:i+batch_size]
-#            batch = sorted(batch, key = lambda x: len(x), reverse=True)
-#            
-#            input_sequences, target_sequences = [], []
-#            #get input and target sequences, one-hot encode them.
-#            for sequence in batch:
-#                encoded = one_hot(sequence, n_chars)
-#                input_sequences.append(encoded[:-1])
-#                target_sequences.append(encoded[1:])
             
             sequence_lengths = [len(sequence) for sequence in input_sequences]
             y_hat, hx = rnn(input_sequences, hx, sequence_lengths)
             
-            #sheer lunacy
-            #padded_target_sequences = pad_sequence(target_sequences)
-            #packed_target_sequences = pack_padded_sequence(padded_target_sequences, sequence_lengths)
-            #y = packed_target_sequences[0].long()
-            y = torch.cat([torch.tensor(s) for s in target_sequences])
+            #this should be more explicity
+            #why are you just picking up the first element of the tuple?
+            y  = get_target_tensor(target_sequences,
+                    sequence_lengths)[0]
+            #this is almost certainly wrong
             loss = loss_function(y_hat, y)
             
-            #what is loss? 
-            #loss = loss_function(output, target_sequences) with some reshaping?
-            #loss.backward()
+            loss.backward()
             #consider clipping grad norm
-            #optimizer.step()
-            #rnn.zero_grad()
+            optimizer.step()
+            rnn.zero_grad()
 
-            if (e + 1) % evaluate_per == 0:
-                hx = rnn.init_hidden(batch_size)
+        if (e + 1) % evaluate_per == 0:
+            hx = rnn.init_hidden(batch_size)
 
-                rnn.eval()
-                pass
-                #TODO
-                #i need some batching for the eval process too, it would seem. can I 
-                #generalize it into a function?
-                rnn.train()
-                print(f"epoch: {e+1}/{epochs}") # think of more useful print statements
+            rnn.eval()
+            validation_batches = prepare_batches(validation,
+                    batch_size, n_chars)
+            #get loss per batch
+            validation_losses = []
+            for input_sequences, target_sequences in validation_batches:
+
+                sequence_lengths = [len(sequence) for sequence in input_sequences]
+                y_hat, hx = rnn(input_sequences, hx, sequence_lengths)
+
+                y = get_target_tensor(target_sequences,
+                        sequence_lengths)[0]
+
+            rnn.train()
+            print(f"epoch: {e+1}/{epochs}") # think of more useful print statements
     
     #validate_packing(packed_batches, int2char)
 

@@ -25,7 +25,6 @@ def prepare_batches(sequences, batch_size, n_states):
         for sequence in batch:
             encoded = one_hot(sequence, n_states)
             input_sequences.append(encoded[:-1])
-            #do i need to one-hot encode the target sequences?
             target_sequences.append(sequence[1:])
 
         yield input_sequences, target_sequences

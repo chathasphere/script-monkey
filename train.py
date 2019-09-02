@@ -5,7 +5,7 @@ from random import seed, shuffle
 import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence, pad_sequence
-from model import patched_forward_impl, CharRNN
+from model import CharRNN
 import pdb
 
 
@@ -63,7 +63,7 @@ def main():
 
     #numer of neurons in hidden layer of LSTM
     hidden_size = 100
-    epochs = 1
+    epochs = 3
     batch_size = 20
     lr = 0.01
     evaluate_per = 1
@@ -89,11 +89,10 @@ def main():
 
     for e in range(epochs):
         n_sequences = len(training)
-        hx = rnn.init_hidden(batch_size)
-        
         training_batches = prepare_batches(training, batch_size, n_chars)
         for input_sequences, target_sequences in training_batches:
-            
+            #hx = rnn.init_hidden(batch_size)
+            hx = None
             sequence_lengths = [len(sequence) for sequence in input_sequences]
             y_hat, hx = rnn(input_sequences, hx, sequence_lengths)
             
@@ -103,7 +102,6 @@ def main():
                     sequence_lengths)[0]
             #this is almost certainly wrong
             loss = loss_function(y_hat, y)
-            
             loss.backward()
             #consider clipping grad norm
             optimizer.step()
@@ -116,7 +114,8 @@ def main():
             validation_batches = prepare_batches(validation,
                     batch_size, n_chars)
             #get loss per batch
-            validation_losses = []
+            val_losses = []
+            n_batches = 0
             for input_sequences, target_sequences in validation_batches:
 
                 sequence_lengths = [len(sequence) for sequence in input_sequences]
@@ -125,8 +124,15 @@ def main():
                 y = get_target_tensor(target_sequences,
                         sequence_lengths)[0]
 
+                val_loss = loss_function(y_hat, y)
+                val_losses.append(val_loss.item())
+                n_batches += 1
+            mean_val_loss = sum(val_losses) / n_batches
+
             rnn.train()
-            print(f"epoch: {e+1}/{epochs}") # think of more useful print statements
+            print(f"epoch: {e+1}/{epochs}")
+            print(f"training loss: {loss.item():.2f}")
+            print(f"validation loss: {mean_val_loss:.2f}")
     
     #validate_packing(packed_batches, int2char)
 

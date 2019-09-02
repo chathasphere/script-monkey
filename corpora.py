@@ -3,8 +3,8 @@ import pdb
 
 class CharEncoder():
     """
-    Contains data on a character-encoded text corpus, including unique characters and mappings
-    to/from characters to integers.
+    Contains data on an encoded text corpus with labelled characters, including unique characters and 
+    mappings to/from characters to integers.
     """
     def __init__(self, corpus):
         """

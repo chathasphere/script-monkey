@@ -20,7 +20,6 @@ class CharRNN(nn.Module):
         
         
     def forward(self, sequences, hx, sequence_lengths):
-
         padded_sequences = pad_sequence(sequences)
         packed_sequences = pack_padded_sequence(padded_sequences, sequence_lengths)
         

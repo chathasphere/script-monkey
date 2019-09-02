@@ -1,6 +1,7 @@
 from helpers import prepare_batches, get_target_tensor
 import torch
 import torch.nn as nn
+import time
 import pdb
 
 def train(model, training_data, validation_data, 
@@ -22,29 +23,43 @@ def train(model, training_data, validation_data,
         print("GPU not available, CPU used")
 
     for e in range(epochs):
+        start_time = time.time()
         training_batches = prepare_batches(training_data, batch_size, model.n_chars)
+        hx = None
+
         for input_sequences, target_sequences in training_batches:
             #hx = model.init_hidden(batch_size)
-            hx = None
+            #hx = None
             sequence_lengths = [len(sequence) for sequence in input_sequences]
             y_hat, hx = model(input_sequences, hx, sequence_lengths)
             
             y  = get_target_tensor(target_sequences,
                     sequence_lengths)[0]
             loss = loss_function(y_hat, y)
+
+            #don't want to be backpropagating through every timestep, so hidden state
+            #is detached from the graph
+            hx = tuple(h.detach() for h in hx)
+            #clear old gradients from previous step
+            model.zero_grad()
+            #compute derivative of loss w/r/t parameters
             loss.backward()
             #consider clipping grad norm
+            #optimizer takes a step based on gradient
             optimizer.step()
-            model.zero_grad()
+            training_loss = loss.item()
+
+        print(f"epoch: {e+1}/{epochs} | time: {time.time() - start_time:.0f}s")
+        print(f"training loss: {training_loss :.2f}")
 
         if (e + 1) % evaluate_per == 0:
-            hx = model.init_hidden(batch_size)
+            #hx = model.init_hidden(batch_size)
 
             model.eval()
             validation_batches = prepare_batches(validation_data,
                     batch_size, model.n_chars)
             #get loss per batch
-            val_losses = []
+            val_loss = 0
             n_batches = 0
             for input_sequences, target_sequences in validation_batches:
 
@@ -54,15 +69,12 @@ def train(model, training_data, validation_data,
                 y = get_target_tensor(target_sequences,
                         sequence_lengths)[0]
 
-                val_loss = loss_function(y_hat, y)
-                val_losses.append(val_loss.item())
+                loss = loss_function(y_hat, y)
+                val_loss += loss.item()
                 n_batches += 1
-            mean_val_loss = sum(val_losses) / n_batches
 
             model.train()
-            print(f"epoch: {e+1}/{epochs}")
-            print(f"training loss: {loss.item():.2f}")
-            print(f"validation loss: {mean_val_loss:.2f}")
+            print(f"validation loss: {val_loss / n_batches:.2f}")
 
         #TODO
         #exception for keyboard interrupt

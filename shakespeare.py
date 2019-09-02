@@ -29,7 +29,6 @@ def main():
     hidden_size = 100
     rnn = CharRNN(char_encoder.n_chars, hidden_size)
     train(rnn, training, validation, epochs = 3, lr = 0.01, evaluate_per = 1, batch_size = 20) 
-    pdb.set_trace()
 
 if __name__ == "__main__":
     main()

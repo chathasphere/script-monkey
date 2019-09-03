@@ -1,6 +1,7 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence
-import pdb
+import torch.nn.functional as F
+from torch.distributions.multinomial import Multinomial
 
 def one_hot(sequence, n_states):
     """
@@ -14,8 +15,7 @@ def one_hot(sequence, n_states):
 def decode_one_hot(vector):
     return vector.nonzero().item()
 
-def prepare_batches(sequences, batch_size, n_states):
-    
+def prepare_batches(sequences, batch_size):
     n_sequences = len(sequences)
     for i in range(0, n_sequences, batch_size):
         batch = sequences[i:i+batch_size]
@@ -23,8 +23,7 @@ def prepare_batches(sequences, batch_size, n_states):
         
         input_sequences, target_sequences = [], []
         for sequence in batch:
-            encoded = one_hot(sequence, n_states)
-            input_sequences.append(encoded[:-1])
+            input_sequences.append(sequence[:-1])
             target_sequences.append(sequence[1:])
 
         yield input_sequences, target_sequences
@@ -35,6 +34,50 @@ def get_target_tensor(target_sequences, sequence_lengths):
     padded_targets = pad_sequence(target_tensors)
     
     return pack_padded_sequence(padded_targets, sequence_lengths)
+
+#def predict_char(model, char_in, hx, encoder, temperature = 1):
+#
+#    ix = encoder.char2int[char_in]
+#    out, hx = model([[ix]], hx, sequence_lengths=[1])
+#    #the lower the temperature, the more conservative the model
+#    #the higher it is (closer to one) the more confident it is
+#    out = out / temperature
+#    p = F.log_softmax(out, dim=1).data
+#    top_chars = np.arange(encoder.n_chars)
+#    #or restrict to just the top characters?
+#
+#    p = p.numpy().squeeze()
+#    pdb.set_trace()
+#
+#    #or do I do a multinomial distribution to sample?
+#    char_out = np.random.choice(top_chars, p = (p / p.sum()))
+#
+#    return encoder.int2char[char_out], h
+
+def generate(model, prime_str, encoder, pred_length, temperature = 0.8):
+
+    model.eval()
+    #convert priming string into a one-hot encoded tensor
+    prime_sequence = [encoder.char2int[char] for char in prime_str]
+
+    output_str = prime_str
+    hx = None
+    for i in range(pred_length):
+        #wrap things in lists because model expects batches
+        out, hx = model([prime_sequence], hx, [len(output_str)])
+
+        out = out / temperature
+        ls = F.log_softmax(out, dim=1).data.squeeze()
+        
+        probs = ls.t() / ls.sum(dim=1)
+        #get prediction of next character
+        m = Multinomial(probs = probs[:,-1])
+        next_char_ix = decode_one_hot(m.sample())
+
+        prime_sequence.append(next_char_ix)
+        output_str += encoder.int2char[next_char_ix]
+
+    return output_str
 
 def validate_packing(packed_batches, int2char):
 

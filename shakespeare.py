@@ -2,6 +2,7 @@ from corpora import CharEncoder, extract_shakespeare_data
 from random import seed, shuffle
 from model import CharRNN
 from train import train
+from helpers import predict_char, generate
 import argparse
 import pdb
 
@@ -28,7 +29,12 @@ def main():
 
     hidden_size = 100
     rnn = CharRNN(char_encoder.n_chars, hidden_size)
-    train(rnn, training, validation, epochs = 3, lr = 0.01, evaluate_per = 1, batch_size = 20) 
+    train(rnn, training, validation, epochs = 10, lr = 0.01, evaluate_per = 2, batch_size = 20)
+
+    #predict_char(rnn, char_in = "A", hx = None, encoder = char_encoder)
+    sample = generate(rnn, prime_str = "Macbeth", pred_length = 100, encoder = char_encoder)
+    pdb.set_trace()
+
 
 if __name__ == "__main__":
     main()

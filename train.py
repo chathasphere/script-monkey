@@ -24,7 +24,7 @@ def train(model, training_data, validation_data,
 
     for e in range(epochs):
         start_time = time.time()
-        training_batches = prepare_batches(training_data, batch_size, model.n_chars)
+        training_batches = prepare_batches(training_data, batch_size)
         hx = None
 
         for input_sequences, target_sequences in training_batches:
@@ -57,7 +57,7 @@ def train(model, training_data, validation_data,
 
             model.eval()
             validation_batches = prepare_batches(validation_data,
-                    batch_size, model.n_chars)
+                    batch_size)
             #get loss per batch
             val_loss = 0
             n_batches = 0

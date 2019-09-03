@@ -1,7 +1,7 @@
 import torch.nn as nn
 from torch.nn.utils.rnn import pad_packed_sequence, pad_sequence, pack_padded_sequence
 import torch.nn.functional as F
-import pdb
+from helpers import one_hot
 
 class CharRNN(nn.Module):
     
@@ -19,8 +19,10 @@ class CharRNN(nn.Module):
         self.dense = nn.Linear(hidden_size, n_chars)
         
         
-    def forward(self, sequences, hx, sequence_lengths):
-        padded_sequences = pad_sequence(sequences)
+    def forward(self, batch, hx, sequence_lengths):
+        encoded_sequences = [one_hot(sequence, self.n_chars) for sequence in batch]
+        #sequences a batch of tensors, each of dimension (sequence_length n_chars) 
+        padded_sequences = pad_sequence(encoded_sequences)
         packed_sequences = pack_padded_sequence(padded_sequences, sequence_lengths)
         
         recurrent_output, hidden = self.lstm(packed_sequences, hx)
@@ -30,11 +32,11 @@ class CharRNN(nn.Module):
         return linear_output, hidden
         
     
-    def init_hidden(self, batch_size):
-        
-        weight0 = next(self.parameters()).data
-        hidden = (weight0.new(self.n_layers, batch_size, self.n_hidden).zero_(),
-                  weight0.new(self.n_layers, batch_size, self.n_hidden).zero_())
+    #def init_hidden(self, batch_size):
+    #    #possibly deprecated ... or consider initializing to a noise state? 
+    #    weight0 = next(self.parameters()).data
+    #    hidden = (weight0.new(self.n_layers, batch_size, self.n_hidden).zero_(),
+    #              weight0.new(self.n_layers, batch_size, self.n_hidden).zero_())
 
-        return hidden
+    #    return hidden
 

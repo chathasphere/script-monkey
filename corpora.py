@@ -17,6 +17,7 @@ class CharEncoder():
         self.char2int = {value: key for key, value in self.int2char.items()}
 
     def encode_sequences(self, text_sequences, max_length):
+        #this may be called "vectorizing?
 
         return [[self.char2int[char] for char in sequence][:max_length] for sequence in text_sequences]
 

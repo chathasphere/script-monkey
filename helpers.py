@@ -9,7 +9,10 @@ def one_hot(sequence, n_states):
     in the list, return a one-hot encoded tensor of shape (m, n)
     where m is sequence length and n is n_states.
     """
-    return torch.eye(n_states)[sequence,:]
+    if torch.cuda.is_available():
+        return torch.eye(n_states)[sequence,:].cuda()
+    else:
+        return torch.eye(n_states)[sequence,:]
 
 
 def decode_one_hot(vector):
@@ -33,7 +36,10 @@ def get_target_tensor(target_sequences, sequence_lengths):
     target_tensors = [torch.tensor(s) for s in target_sequences]
     padded_targets = pad_sequence(target_tensors)
     
-    return pack_padded_sequence(padded_targets, sequence_lengths)
+    if torch.cuda.is_available():
+        return pack_padded_sequence(padded_targets, sequence_lengths).cuda()
+    else:
+        return pack_padded_sequence(padded_targets, sequence_lengths)
 
 #def predict_char(model, char_in, hx, encoder, temperature = 1):
 #

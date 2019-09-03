@@ -14,8 +14,7 @@ class CharRNN(nn.Module):
         self.n_chars = n_chars
         #input size corresponds to the number of unique characters
         self.lstm = nn.LSTM(n_chars, hidden_size, n_rnn_layers, dropout=dropout)
-        
-        #decoder layer?
+        #decoder layer
         self.dense = nn.Linear(hidden_size, n_chars)
         
         

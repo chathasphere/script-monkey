@@ -2,6 +2,7 @@ from helpers import prepare_batches, get_target_tensor
 import torch
 import torch.nn as nn
 import time
+from random import shuffle
 import pdb
 
 def train(model, training_data, validation_data, 
@@ -9,17 +10,15 @@ def train(model, training_data, validation_data,
 
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
-    #this is equivalent to a (log) softmax activation layer + negative log likelihood
+    #this is equivalent to a log softmax activation layer + negative log likelihood
     loss_function = nn.CrossEntropyLoss()
     
-    #I don't understand what's going on with the "device" variable
-    #particularly when transferring this to a GPU
-    is_cuda = torch.cuda.is_available()
-    if is_cuda:
-        device = torch.device("cuda")
+    if torch.cuda.is_available():
+        #device = torch.device("cuda")
+        model.cuda()
         print("GPU is available")
     else:
-        device = torch.device("cpu")
+        #device = torch.device("cpu")
         print("GPU not available, CPU used")
 
     for e in range(epochs):
@@ -28,8 +27,10 @@ def train(model, training_data, validation_data,
         hx = None
 
         for input_sequences, target_sequences in training_batches:
-            #hx = model.init_hidden(batch_size)
-            #hx = None
+
+            if len(input_sequences) != batch_size:
+                continue
+
             sequence_lengths = [len(sequence) for sequence in input_sequences]
             y_hat, hx = model(input_sequences, hx, sequence_lengths)
             
@@ -51,9 +52,9 @@ def train(model, training_data, validation_data,
 
         print(f"epoch: {e+1}/{epochs} | time: {time.time() - start_time:.0f}s")
         print(f"training loss: {training_loss :.2f}")
+        shuffle(training_data)
 
         if (e + 1) % evaluate_per == 0:
-            #hx = model.init_hidden(batch_size)
 
             model.eval()
             validation_batches = prepare_batches(validation_data,
@@ -63,6 +64,8 @@ def train(model, training_data, validation_data,
             n_batches = 0
             for input_sequences, target_sequences in validation_batches:
 
+                if len(input_sequences) != batch_size:
+                    continue
                 sequence_lengths = [len(sequence) for sequence in input_sequences]
                 y_hat, hx = model(input_sequences, hx, sequence_lengths)
 
@@ -75,6 +78,8 @@ def train(model, training_data, validation_data,
 
             model.train()
             print(f"validation loss: {val_loss / n_batches:.2f}")
+            shuffle(validation_data)
+
 
         #TODO
         #exception for keyboard interrupt

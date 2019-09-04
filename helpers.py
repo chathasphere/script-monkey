@@ -21,9 +21,8 @@ def prepare_batches(sequences, batch_size):
     n_sequences = len(sequences)
     for i in range(0, n_sequences, batch_size):
         batch = sequences[i:i+batch_size]
-        batch = sorted(batch, key = lambda x: len(x), reverse=True)
-        
         input_sequences, target_sequences = [], []
+
         for sequence in batch:
             input_sequences.append(sequence[:-1])
             target_sequences.append(sequence[1:])
@@ -51,7 +50,6 @@ def get_target_tensor(target_sequences):
 #    #or restrict to just the top characters?
 #
 #    p = p.numpy().squeeze()
-#    pdb.set_trace()
 #
 #    #or do I do a multinomial distribution to sample?
 #    char_out = np.random.choice(top_chars, p = (p / p.sum()))
@@ -83,22 +81,15 @@ def generate(model, prime_str, encoder, pred_length, temperature = 0.8):
 
     return output_str
 
-def validate_packing(packed_batches, int2char):
+def make_sequences(text, sequence_length=100):
+    """
+    Split a text into sequences of the same length in characters.
+    """
+    n_sequences = len(text) // sequence_length
+    sequences = []
+    for i in range(0, n_sequences):
+        sequence = text[i*sequence_length : (i+1)*sequence_length]
+        sequences.append(sequence)
 
-    lines = []
+    return sequences
 
-    for packed_batch in packed_batches:
-
-        unpacked_sequences, sequence_lengths = pad_packed_sequence(packed_batch)
-
-        for i in range(len(sequence_lengths)):
-
-            length = sequence_lengths[i]
-            sequence = unpacked_sequences[:,i,:][:length]
-
-            numbers_sequence = [decode_one_hot(vec) for vec in sequence]
-
-            lines.append([int2char[num] for num in numbers_sequence])
-
-    for i in range(15):
-        print(''.join(lines[i]) + '\n')

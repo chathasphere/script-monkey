@@ -2,7 +2,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from helpers import one_hot
 from torch import stack
-import pdb
 
 class CharRNN(nn.Module):
     
@@ -14,7 +13,8 @@ class CharRNN(nn.Module):
         self.n_hidden = hidden_size
         self.n_chars = n_chars
         #input size corresponds to the number of unique characters
-        self.lstm = nn.LSTM(n_chars, hidden_size, n_rnn_layers, dropout=dropout)
+        self.lstm = nn.LSTM(n_chars, hidden_size, n_rnn_layers, dropout=dropout, 
+                batch_first=True)
         #decoder layer
         self.dense = nn.Linear(hidden_size, n_chars)
         
@@ -27,7 +27,7 @@ class CharRNN(nn.Module):
         
         #batch has dimensions (n_sequences x batch_size x n_chars)
         #fixinf a dimension
-        batch = stack(encoded_sequences, dim=1) 
+        batch = stack(encoded_sequences, dim=0)
         #pass into the LSTM
         recurrent_output, hidden = self.lstm(batch, hx)
         #"dense" layer just projects it back down to the space of available characters

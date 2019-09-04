@@ -1,8 +1,8 @@
-from corpora import CharEncoder, extract_shakespeare_data, make_sequences
+from corpora import CharEncoder, extract_shakespeare_data 
 from random import seed, shuffle
 from model import CharRNN
 from train import train
-from helpers import generate
+from helpers import generate, make_sequences
 import argparse
 import pdb
 

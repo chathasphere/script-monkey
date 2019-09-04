@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import time
 from random import shuffle
-import pdb
 
 def train(model, training_data, validation_data, 
         epochs, lr, evaluate_per, batch_size):

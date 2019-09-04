@@ -16,10 +16,10 @@ class CharEncoder():
         self.int2char = dict(enumerate(self.chars))
         self.char2int = {value: key for key, value in self.int2char.items()}
 
-    def encode_sequences(self, text_sequences, max_length):
+    def label_sequences(self, text_sequences):
         #this may be called "vectorizing?
 
-        return [[self.char2int[char] for char in sequence][:max_length] for sequence in text_sequences]
+        return [[self.char2int[char] for char in sequence] for sequence in text_sequences]
 
 
 def extract_shakespeare_data(path = "data/t8.shakespeare.txt"):
@@ -30,15 +30,14 @@ def extract_shakespeare_data(path = "data/t8.shakespeare.txt"):
         path (str): path to Shakespare text file
 
     Returns:
-        text (str): entire text
+        cleaned_text (str): entire cleaned text stripped of header/notes
         corpus (list of str): list of words found in text, including duplicates
-        lines (list of list of str): list of lines found in text
     """
 
     with open(path) as f:
         text = f.read()
 
-    lines = []
+    #lines = []
     corpus = []
     cleaned_text = ""
     skip = False
@@ -55,7 +54,22 @@ def extract_shakespeare_data(path = "data/t8.shakespeare.txt"):
 
         cleaned_text += line
         corpus.extend(line)
-        lines.append(line)
+        #lines.append(line)
 
-    return cleaned_text, corpus, lines
+    return cleaned_text, corpus
+
+def make_sequences(text, sequence_length=100):
+    """
+    Split a text into sequences of the same length in characters.
+    """
+    n_sequences = len(text) // sequence_length
+    sequences = []
+    for i in range(0, n_sequences):
+        sequence = text[i*sequence_length : (i+1)*sequence_length]
+        sequences.append(sequence)
+
+    return sequences
+
+
+    
 

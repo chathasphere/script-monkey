@@ -1,5 +1,4 @@
 import torch
-from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence
 import torch.nn.functional as F
 from torch.distributions.multinomial import Multinomial
 
@@ -31,15 +30,14 @@ def prepare_batches(sequences, batch_size):
 
         yield input_sequences, target_sequences
 
-def get_target_tensor(target_sequences, sequence_lengths):
+def get_target_tensor(target_sequences):
 
     target_tensors = [torch.tensor(s) for s in target_sequences]
-    padded_targets = pad_sequence(target_tensors)
     
     if torch.cuda.is_available():
-        return pack_padded_sequence(padded_targets, sequence_lengths).cuda()
+        return torch.stack(target_tensors).flatten().cuda()
     else:
-        return pack_padded_sequence(padded_targets, sequence_lengths)
+        return torch.stack(target_tensors).flatten()
 
 #def predict_char(model, char_in, hx, encoder, temperature = 1):
 #

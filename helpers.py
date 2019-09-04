@@ -38,49 +38,6 @@ def get_target_tensor(target_sequences):
     else:
         return torch.stack(target_tensors).flatten()
 
-#def predict_char(model, char_in, hx, encoder, temperature = 1):
-#
-#    ix = encoder.char2int[char_in]
-#    out, hx = model([[ix]], hx, sequence_lengths=[1])
-#    #the lower the temperature, the more conservative the model
-#    #the higher it is (closer to one) the more confident it is
-#    out = out / temperature
-#    p = F.log_softmax(out, dim=1).data
-#    top_chars = np.arange(encoder.n_chars)
-#    #or restrict to just the top characters?
-#
-#    p = p.numpy().squeeze()
-#
-#    #or do I do a multinomial distribution to sample?
-#    char_out = np.random.choice(top_chars, p = (p / p.sum()))
-#
-#    return encoder.int2char[char_out], h
-
-def generate(model, prime_str, encoder, pred_length, temperature = 0.8):
-
-    model.eval()
-    #convert priming string into a one-hot encoded tensor
-    prime_sequence = [encoder.char2int[char] for char in prime_str]
-
-    output_str = prime_str
-    hx = None
-    for i in range(pred_length):
-        #wrap things in lists because model expects batches
-        out, hx = model([prime_sequence], hx, [len(output_str)])
-
-        out = out / temperature
-        ls = F.log_softmax(out, dim=1).data.squeeze()
-        
-        probs = ls.t() / ls.sum(dim=1)
-        #get prediction of next character
-        m = Multinomial(probs = probs[:,-1])
-        next_char_ix = decode_one_hot(m.sample())
-
-        prime_sequence.append(next_char_ix)
-        output_str += encoder.int2char[next_char_ix]
-
-    return output_str
-
 def make_sequences(text, sequence_length=100):
     """
     Split a text into sequences of the same length in characters.
@@ -92,4 +49,39 @@ def make_sequences(text, sequence_length=100):
         sequences.append(sequence)
 
     return sequences
+
+def sample(model, encoder, size, prime_str, temperature):
+
+    model.eval()
+    output_str = prime_str
+    input_sequence = [encoder.char2int[char] for char in prime_str]
+
+    hx = None
+    
+    for i in range(size):
+
+        out, hx = model([input_sequence], hx)
+        
+        hx = tuple(h.detach() for h in hx)
+
+        out = out.squeeze()
+        
+        dist = (F.log_softmax(out, dim=-1).data / temperature).exp()
+
+        probs = dist.t() / dist.sum(dim=-1)
+        
+        if len(probs.shape) == 1:
+          probs = probs.unsqueeze(1)
+
+        #TODO use topk?
+        # torch.zeros(2, 5).scatter_(indices, topk) would be a place to start methinks
+       
+        next_char_ix = torch.multinomial(probs[:,-1],1).item()
+
+        input_sequence = [next_char_ix]
+
+        output_str += encoder.int2char[next_char_ix]
+
+    return output_str
+
 

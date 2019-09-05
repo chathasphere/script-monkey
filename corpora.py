@@ -31,14 +31,11 @@ def extract_shakespeare_data(path = "data/t8.shakespeare.txt"):
 
     Returns:
         cleaned_text (str): entire cleaned text stripped of header/notes
-        corpus (list of str): list of words found in text, including duplicates
     """
 
     with open(path) as f:
         text = f.read()
 
-    #lines = []
-    corpus = []
     cleaned_text = ""
     skip = False
     
@@ -53,10 +50,20 @@ def extract_shakespeare_data(path = "data/t8.shakespeare.txt"):
         line = line+"\n"
 
         cleaned_text += line
-        corpus.extend(line)
-        #lines.append(line)
 
-    return cleaned_text, corpus
+    return cleaned_text
+
+def extract_kjv_data(path = "data/kjv.txt"):
+    """
+    Load the King James Version of the Bible.
+    """
+    with open(path) as f:
+        text = f.read()
+
+    text = text[996:-18730]
+
+    return text
+
 
 def make_sequences(text, sequence_length=100):
     """

@@ -14,8 +14,8 @@ def main():
 
     seed(1616)
     
-    text, corpus = extract_shakespeare_data("data/t8.shakespeare.txt")
-    char_encoder = CharEncoder(corpus)
+    text = extract_shakespeare_data("data/t8.shakespeare.txt")
+    char_encoder = CharEncoder(text)
     #get sequences of 100 characters
     sequences = make_sequences(text)
     #vectorize with numeric labeling

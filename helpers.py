@@ -61,7 +61,7 @@ def make_sequences(text, sequence_length=100):
 
     return sequences
 
-def sample(model, encoder, size, prime_str, temperature):
+def sample(model, encoder, size, prime_str, temperature, topk=None):
     """
     Randomly generate text from a trained model.
 
@@ -95,7 +95,7 @@ def sample(model, encoder, size, prime_str, temperature):
         #interpreting output as unnormalized logits, obtain probabilities of the next character, scaled
         #by temperature, conditioned on the input sequence.
         #a higher temperature means a softer probability distribution, i.e. less conservative predictions.
-        probs = F.softmax(out/ temperature, dim=-1).data
+        probs = F.softmax(out/ temperature, dim=-1)
           
         #If probs are generated on a string of multiple characters,
         #keep prediction of next character only
@@ -110,7 +110,7 @@ def sample(model, encoder, size, prime_str, temperature):
             else:
                 zeros = torch.zeros(encoder.n_chars)
             probs =  torch.scatter(zeros, 0, indices, values)  
-        #sample a random character from the probabolity distribution  
+        #sample a random character from the probability distribution
         next_char_ix = torch.multinomial(probs,1).item()
         #set the new input sequence as just the next predicted character while retaining hidden state
         input_sequence = [next_char_ix]

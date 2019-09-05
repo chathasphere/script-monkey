@@ -2,9 +2,8 @@ from corpora import CharEncoder, extract_shakespeare_data
 from random import seed, shuffle
 from model import CharRNN
 from train import train
-from helpers import generate, make_sequences
+from helpers import  make_sequences, sample
 import argparse
-import pdb
 
 def main():
     parser = argparse.ArgumentParser("Char-RNN on the complete works of Shakespeare")
@@ -34,9 +33,10 @@ def main():
 
     hidden_size = 128 
     rnn = CharRNN(char_encoder.n_chars, hidden_size)
-    train(rnn, training, validation, epochs = 10, lr = 0.001, evaluate_per = 2, batch_size = 20)
+    train(rnn, training, validation, epochs = 4, lr = 0.01, evaluate_per = 2, batch_size = 20)
     
-    #sample = generate(rnn, prime_str = "Macbeth", pred_length = 100, encoder = char_encoder)
+    print(sample(rnn, prime_str = "Macbeth", size = 100, encoder = char_encoder,
+            temperature=.9))
 
 
 if __name__ == "__main__":
